@@ -1,0 +1,198 @@
+---
+title: "Mortality Analysis Dashboard"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+# Import Libraries
+
+library(flexdashboard)
+library(dplyr)
+library(data.table)
+library(ggplot2)
+library(plotly)
+library(DT)
+
+```
+
+```{r}
+# Import Data
+
+df.mort <- fread('data_new.csv')
+df.factors3 <- fread('factors3.csv')
+df.factors4 <- fread('factors4.csv')
+
+```
+
+
+CONTACT INFO
+=======================================================================
+
+
+**Name:**  Tommy Steed   
+**Work E-mail:**  tsteed@lgamerica.com      
+**Personal e-mail:**  tommysteed5@gmail.com  
+**Git Home Page:**  [https://tommysteed3.github.io/](https://tommysteed3.github.io/)  
+**Git Repository:**  [LINK](https://github.com/TommySteed3/Emerging_Leaders_Summit_2022)  
+**Final Markdown:**  [LINK](https://rpubs.com/Tommy_Steed/Emerging1)
+  
+
+
+MODEL 3
+=======================================================================
+
+Sidebar {.sidebar}
+----------------------------------------------------------------------
+
+
+```{r}
+
+list.categories <- c('attained_age','gender','face_amount_band','insurance_plan','duration.factor')
+
+selectInput(inputId = "checkbox_group", 
+                   label= h4("Selected Variable"),
+                   choices = list.categories,
+                   selected = "duration.factor",
+                   multiple = FALSE)
+
+
+
+
+
+```
+
+```{r}
+
+df.agg3 <- reactive( {
+  
+  df.mort %>%
+    group_by_(input$checkbox_group) %>%
+    summarise(actual = sum(number_of_deaths),
+            expected = sum(exp(model3))) %>%
+  mutate(a.to.e = round(actual/expected,2))
+
+})
+
+
+df.agg4 <- reactive( {
+  
+  df.mort %>%
+    group_by_(input$checkbox_group) %>%
+    summarise(actual = sum(number_of_deaths),
+            expected = sum(exp(model4))) %>%
+  mutate(a.to.e = round(actual/expected,2))
+
+})
+
+df.factors3b <- reactive({
+  
+  input.group <- input$checkbox_group
+  
+  df.factors3 %>%
+    filter(GROUP == input.group) %>%
+    mutate(Factor = as.numeric(Factor))
+    
+  
+})
+
+
+df.factors4b <- reactive({
+  
+  input.group <- input$checkbox_group
+  
+  df.factors4 %>%
+    filter(GROUP == input.group) %>%
+    mutate(Factor = as.numeric(Factor))
+    
+  
+})
+
+
+```
+
+
+Column {data-width=650 .tabset}
+-----------------------------------------------------------------------
+
+### A to E
+
+```{r}
+
+output$graph1.3 <- renderPlotly({ggplot(df.agg3(), aes_string(x = input$checkbox_group, y = 'a.to.e')) + geom_point() + geom_line(group = 1)})
+
+plotlyOutput('graph1.3')
+
+
+```
+
+### Actuals
+
+```{r}
+
+output$graph2.3 <- renderPlotly({ggplot(df.agg3(), aes_string(x = input$checkbox_group, y = 'actual')) + geom_bar(stat = "identity")})
+
+plotlyOutput('graph2.3')
+
+
+```
+
+
+
+### Factors
+
+```{r}
+
+output$graph3.3 <- renderPlotly({ggplot(df.factors3b(), aes_string(x = 'Category', y = 'Factor')) + geom_line(group = 1) +
+    geom_point()})
+
+plotlyOutput('graph3.3')
+
+
+```
+
+
+MODEL 4
+=======================================================================
+
+Column {data-width=650 .tabset}
+-----------------------------------------------------------------------
+
+### A to E
+
+```{r}
+output$graph1.4 <- renderPlotly({ggplot(df.agg4(), aes_string(x = input$checkbox_group, y = 'a.to.e')) + geom_point() + geom_line(group = 1)})
+
+plotlyOutput('graph1.4')
+
+
+```
+
+### Actuals
+
+```{r}
+
+output$graph2.4 <- renderPlotly({ggplot(df.agg4(), aes_string(x = input$checkbox_group, y = 'actual')) + geom_bar(stat = "identity")})
+
+plotlyOutput('graph2.4')
+
+
+```
+
+
+
+### Factors
+
+```{r}
+
+output$graph3.4 <- renderPlotly({ggplot(df.factors4b(), aes_string(x = 'Category', y = 'Factor')) + geom_line(group = 1) +
+    geom_point()})
+
+plotlyOutput('graph3.4')
+
+
+```
+
